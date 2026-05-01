@@ -5,7 +5,7 @@ import { TimeEngine, TimeContext } from "@/core/TimeEngine";
 import { QimenEngine, QimenMethod, QimenJu, QimenPan } from "@/core/QimenEngine";
 import { PatternEngine } from "@/core/PatternEngine";
 import { PatternRule } from "@/data/PatternData";
-import { PALACE_INFO, TIAN_GAN } from "@/core/QimenConstants";
+import { PALACE_INFO, TIAN_GAN, XUN_SHOU_MAP } from "@/core/QimenConstants";
 import { DOOR_DETAILS, STAR_DETAILS, DEITY_DETAILS } from "@/data/InterpretationData";
 import { Clock, Calendar as CalendarIcon, Moon, Sun, ArrowRight, Stars, MoveRight, X, Palette, BookOpen, LayoutGrid, Compass, User, Trophy } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -27,9 +27,114 @@ const CATEGORY_LABELS: Record<TaskCategory, string> = {
   MARRIAGE: 'Hôn Nhân/Tình Cảm',
   HEALTH: 'Sức Khỏe/Cầu Y',
   CONFLICT: 'Tranh Chấp/Kiện Tụng',
-  TRADING: 'Trading/Đầu Tư'
+  TRADING: 'Kinh Doanh/Đầu Tư'
 };
 
+const CelestialBackground = ({ theme }: { theme: ThemeType }) => (
+  <div className={`absolute inset-0 flex items-center justify-center pointer-events-none overflow-hidden ${theme === 'light' ? 'opacity-5' : 'opacity-[0.15]'} mix-blend-screen`}>
+    <svg viewBox="0 0 1000 1000" className={`w-[150vw] h-[150vw] lg:w-[120vh] lg:h-[120vh] animate-[spin_240s_linear_infinite] ${theme === 'cyber' ? 'text-accent-p' : 'text-gold'}`}>
+       {/* Outer rings */}
+       <circle cx="500" cy="500" r="480" fill="none" stroke="currentColor" strokeWidth="1" strokeDasharray="5,15" />
+       <circle cx="500" cy="500" r="450" fill="none" stroke="currentColor" strokeWidth="1.5" />
+       
+       {/* 24 Mountains / Sectors */}
+       {Array.from({length: 24}).map((_, i) => (
+         <line key={`tick-${i}`} x1="500" y1="50" x2="500" y2="80" transform={`rotate(${i * 15} 500 500)`} stroke="currentColor" strokeWidth="1" />
+       ))}
+       
+       {/* 64 Hexagram marks */}
+       {Array.from({length: 64}).map((_, i) => (
+         <line key={`hex-${i}`} x1="500" y1="90" x2="500" y2="110" transform={`rotate(${i * (360/64)} 500 500)`} stroke="currentColor" strokeWidth="0.5" />
+       ))}
+
+       <circle cx="500" cy="500" r="380" fill="none" stroke="currentColor" strokeWidth="1" strokeDasharray="2,6" />
+       
+       {/* 8 Trigram directional lines */}
+       {Array.from({length: 8}).map((_, i) => (
+         <g key={`tri-${i}`} transform={`rotate(${i * 45} 500 500)`}>
+           <line x1="500" y1="120" x2="500" y2="380" stroke="currentColor" strokeWidth="0.5" opacity="0.3"/>
+           <text x="500" y="140" fill="currentColor" fontSize="12" textAnchor="middle" opacity="0.5">☯</text>
+         </g>
+       ))}
+
+       {/* Constellations (Big Dipper / Bắc Đẩu) */}
+       <g opacity="0.6" stroke="currentColor" strokeWidth="1.5" fill="currentColor">
+         <polyline points="280,320 340,260 420,280 470,350 560,330 630,400 720,360" fill="none" strokeDasharray="4,4" />
+         <circle cx="280" cy="320" r="4" />
+         <circle cx="340" cy="260" r="4" />
+         <circle cx="420" cy="280" r="4" />
+         <circle cx="470" cy="350" r="5" />
+         <circle cx="560" cy="330" r="5" />
+         <circle cx="630" cy="400" r="6" />
+         <circle cx="720" cy="360" r="7" />
+       </g>
+       
+       {/* Nam Đẩu Thất Tinh */}
+       <g opacity="0.4" stroke="currentColor" strokeWidth="1" fill="currentColor" transform="rotate(140 500 500)">
+         <polyline points="300,500 350,560 400,650 480,700 550,680 600,750" fill="none" strokeDasharray="2,4" />
+         <circle cx="300" cy="500" r="3" />
+         <circle cx="350" cy="560" r="3" />
+         <circle cx="400" cy="650" r="4" />
+         <circle cx="480" cy="700" r="4" />
+         <circle cx="550" cy="680" r="3" />
+         <circle cx="600" cy="750" r="3" />
+       </g>
+
+       {/* Inner sacred geometry (Octagram / Star) */}
+       <circle cx="500" cy="500" r="220" fill="none" stroke="currentColor" strokeWidth="0.5" />
+       {Array.from({length: 2}).map((_, i) => (
+         <rect key={`sq-${i}`} x="344.5" y="344.5" width="311" height="311" fill="none" stroke="currentColor" strokeWidth="0.5" transform={`rotate(${i * 45} 500 500)`} />
+       ))}
+       
+       {/* Center point */}
+       <circle cx="500" cy="500" r="10" fill="currentColor" opacity="0.5" />
+       <circle cx="500" cy="500" r="60" fill="none" stroke="currentColor" strokeWidth="1" strokeDasharray="4,4" />
+    </svg>
+    <svg viewBox="0 0 1000 1000" className={`absolute w-[100vw] h-[100vw] lg:w-[80vh] lg:h-[80vh] animate-[spin_120s_linear_infinite_reverse] ${theme === 'cyber' ? 'text-accent-s' : 'text-saffron'}`}>
+        {/* Counter-rotating inner rings */}
+        <circle cx="500" cy="500" r="400" fill="none" stroke="currentColor" strokeWidth="0.5" strokeDasharray="10,20" />
+        {Array.from({length: 12}).map((_, i) => (
+         <g key={`moon-${i}`} transform={`rotate(${i * 30} 500 500)`}>
+           <circle cx="500" cy="100" r="4" fill="currentColor" opacity="0.6" />
+           <line x1="500" y1="104" x2="500" y2="120" stroke="currentColor" strokeWidth="1" opacity="0.4" />
+         </g>
+       ))}
+       {/* Ancient magical text/runes abstract representations */}
+       {Array.from({length: 8}).map((_, i) => (
+         <text key={`rune-${i}`} x="500" y="50" transform={`rotate(${i * 45 + 22.5} 500 500)`} fill="currentColor" fontSize="16" textAnchor="middle" opacity="0.4" fontFamily="serif">篆</text>
+       ))}
+    </svg>
+  </div>
+);
+
+const AncientCorners = () => (
+  <div className="absolute inset-0 pointer-events-none z-0 opacity-40">
+    <svg className="absolute top-0 left-0 w-16 h-16 md:w-24 md:h-24 text-accent-t" viewBox="0 0 100 100">
+      <path d="M10,90 L10,10 L90,10" fill="none" stroke="currentColor" strokeWidth="2" />
+      <path d="M20,80 L20,20 L80,20" fill="none" stroke="currentColor" strokeWidth="0.5" />
+      <circle cx="20" cy="20" r="3" fill="currentColor" />
+      <path d="M10,30 L30,30 M30,10 L30,30" fill="none" stroke="currentColor" strokeWidth="1" />
+    </svg>
+    <svg className="absolute top-0 right-0 w-16 h-16 md:w-24 md:h-24 text-accent-t transform rotate-90" viewBox="0 0 100 100">
+      <path d="M10,90 L10,10 L90,10" fill="none" stroke="currentColor" strokeWidth="2" />
+      <path d="M20,80 L20,20 L80,20" fill="none" stroke="currentColor" strokeWidth="0.5" />
+      <circle cx="20" cy="20" r="3" fill="currentColor" />
+      <path d="M10,30 L30,30 M30,10 L30,30" fill="none" stroke="currentColor" strokeWidth="1" />
+    </svg>
+    <svg className="absolute bottom-0 right-0 w-16 h-16 md:w-24 md:h-24 text-accent-t transform rotate-180" viewBox="0 0 100 100">
+      <path d="M10,90 L10,10 L90,10" fill="none" stroke="currentColor" strokeWidth="2" />
+      <path d="M20,80 L20,20 L80,20" fill="none" stroke="currentColor" strokeWidth="0.5" />
+      <circle cx="20" cy="20" r="3" fill="currentColor" />
+      <path d="M10,30 L30,30 M30,10 L30,30" fill="none" stroke="currentColor" strokeWidth="1" />
+    </svg>
+    <svg className="absolute bottom-0 left-0 w-16 h-16 md:w-24 md:h-24 text-accent-t transform -rotate-90" viewBox="0 0 100 100">
+      <path d="M10,90 L10,10 L90,10" fill="none" stroke="currentColor" strokeWidth="2" />
+      <path d="M20,80 L20,20 L80,20" fill="none" stroke="currentColor" strokeWidth="0.5" />
+      <circle cx="20" cy="20" r="3" fill="currentColor" />
+      <path d="M10,30 L30,30 M30,10 L30,30" fill="none" stroke="currentColor" strokeWidth="1" />
+    </svg>
+  </div>
+);
 export default function Home() {
   const [dateStr, setDateStr] = useState<string>("");
   const [timeContext, setTimeContext] = useState<TimeContext | null>(null);
@@ -185,6 +290,8 @@ export default function Home() {
         
         {/* Lưới tọa độ chìm (Spiritual/Mandala or Cyber) */}
         <div className={`absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAiIGhlaWdodD0iMjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGNpcmNsZSBjeD0iMSIgY3k9IjEiIHI9IjEiIGZpbGw9InJnYmEoMjUwLDIwNCw0OCwwLjA1KSIvPjwvc3ZnPg==')] ${theme === 'light' ? 'opacity-10' : 'opacity-30'}`}></div>
+        
+        <CelestialBackground theme={theme} />
       </div>
 
       {/* --- CỘT 1: SIDEBAR ĐIỀU KHIỂN (Fixed width) --- */}
@@ -338,12 +445,14 @@ export default function Home() {
                </div>
             </div>
 
-            <motion.div 
-               initial={{ opacity: 0, scale: 0.98 }}
-               animate={{ opacity: 1, scale: 1 }}
-               className="grid grid-cols-3 gap-2 md:gap-4 w-full max-w-2xl aspect-square relative"
-            >
-              <AnimatePresence mode="popLayout">
+            <div className="relative w-full max-w-2xl aspect-square">
+               <AncientCorners />
+               <motion.div 
+                  initial={{ opacity: 0, scale: 0.98 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  className="grid grid-cols-3 gap-2 md:gap-4 w-full h-full relative z-10"
+               >
+                 <AnimatePresence mode="popLayout">
               {[4, 9, 2, 3, 5, 7, 8, 1, 6].map((palaceIndex) => {
                 const p = qimenPan.palaces[palaceIndex];
                 const pPatterns = patterns[palaceIndex] || [];
@@ -377,37 +486,37 @@ export default function Home() {
                   >
                     <div className="absolute top-2 left-2 flex items-center gap-1.5 flex-wrap max-w-[80%]">
                        <span className="text-[8px] font-bold text-accent-t font-mono">{palaceIndex}</span>
-                       {isVoid && <span className="text-[7px] bg-neutral-800 text-neutral-400 px-1 py-0.5 rounded uppercase font-bold tracking-tighter">Trống</span>}
-                       {isHorse && <span className="text-[7px] bg-amber-500/20 text-amber-500 border border-amber-500/10 px-1 py-0.5 rounded uppercase font-bold tracking-tighter">Mã</span>}
-                       {isLifePalace && <span className="text-[7px] bg-accent-p/20 text-accent-p border border-accent-p/10 px-1 py-0.5 rounded uppercase font-bold tracking-tighter">Mệnh</span>}
-                       {isVictory && <span className="text-[7px] bg-emerald-500/20 text-emerald-400 border border-emerald-500/10 px-1 py-0.5 rounded uppercase font-bold tracking-tighter">Thắng</span>}
-                       {isForbidden && <span className="text-[7px] bg-rose-500/20 text-rose-400 border border-rose-500/10 px-1 py-0.5 rounded uppercase font-bold tracking-tighter">Kỵ</span>}
+                       {isVoid && <span className={`text-[7px] px-1 py-0.5 rounded uppercase font-bold tracking-tighter ${theme === 'light' ? 'bg-stone-200 text-stone-600' : 'bg-neutral-800 text-neutral-400'}`}>Trống</span>}
+                       {isHorse && <span className={`text-[7px] px-1 py-0.5 rounded uppercase font-bold tracking-tighter border ${theme === 'light' ? 'bg-amber-100 text-amber-800 border-amber-300' : 'bg-amber-500/20 text-amber-500 border-amber-500/10'}`}>Mã</span>}
+                       {isLifePalace && <span className={`text-[7px] px-1 py-0.5 rounded uppercase font-bold tracking-tighter border ${theme === 'light' ? 'bg-purple-100 text-purple-800 border-purple-300' : 'bg-accent-p/20 text-accent-p border-accent-p/10'}`}>Mệnh</span>}
+                       {isVictory && <span className={`text-[7px] px-1 py-0.5 rounded uppercase font-bold tracking-tighter border ${theme === 'light' ? 'bg-emerald-100 text-emerald-800 border-emerald-300' : 'bg-emerald-500/20 text-emerald-400 border-emerald-500/10'}`}>Thắng</span>}
+                       {isForbidden && <span className={`text-[7px] px-1 py-0.5 rounded uppercase font-bold tracking-tighter border ${theme === 'light' ? 'bg-red-100 text-red-800 border-red-300' : 'bg-rose-500/20 text-rose-400 border-rose-500/10'}`}>Kỵ</span>}
                     </div>
 
                     <div className="absolute top-8 left-2 flex flex-col gap-1">
-                      {pPatterns.slice(0, 2).map(pattern => (
-                        <div key={pattern.id} className={`px-1 py-0.5 rounded text-[7px] uppercase font-bold ${pattern.severity === 'AUSPICIOUS' ? 'text-emerald-400' : pattern.severity === 'OMINOUS' ? 'text-red-400' : 'text-neutral-400'}`}>{pattern.name}</div>
+                      {pPatterns
+                        .filter(pt => pt.name !== 'Phản Ngâm' && pt.name !== 'Phục Ngâm')
+                        .slice(0, 2)
+                        .map(pattern => (
+                        <div key={pattern.id} className={`px-1 py-0.5 rounded text-[7px] uppercase font-bold ${pattern.severity === 'AUSPICIOUS' ? (theme === 'light' ? 'text-emerald-800 bg-emerald-800/10' : 'text-emerald-400') : pattern.severity === 'OMINOUS' ? (theme === 'light' ? 'text-red-800 bg-red-800/10' : 'text-red-400') : (theme === 'light' ? 'text-stone-700 bg-stone-700/10' : 'text-neutral-400')}`}>{pattern.name}</div>
                       ))}
                     </div>
 
-                    <div className={`absolute top-2 right-2 text-[8px] font-bold uppercase ${theme === 'light' ? 'text-rose-700' : 'text-rose-400/80'}`}>{p.shenPan}</div>
-                    <div className={`absolute top-6 right-2 text-[8px] font-bold uppercase ${theme === 'light' ? 'text-blue-700' : 'text-blue-300/80'}`}>{p.tianPan}</div>
-                    <div className={`absolute bottom-2 left-2 text-[9px] font-bold ${theme === 'light' ? 'text-emerald-700' : 'text-emerald-400'}`}>{p.renPan}</div>
+                    <div className={`absolute top-2 right-2 text-[8px] font-bold uppercase ${theme === 'light' ? 'text-rose-900' : 'text-rose-400/80'}`}>{p.shenPan}</div>
+                    <div className={`absolute top-6 right-2 text-[8px] font-bold uppercase ${theme === 'light' ? 'text-blue-900' : 'text-blue-300/80'}`}>{p.tianPan}</div>
+                    <div className={`absolute bottom-2 left-2 text-[9px] font-bold ${theme === 'light' ? 'text-emerald-900' : 'text-emerald-400'}`}>{p.renPan}</div>
                     <div className="absolute bottom-2 right-2 text-xs text-accent-t opacity-60">{PALACE_INFO[palaceIndex].symbol}</div>
 
                     <div className="flex flex-col items-center justify-center">
-                       {isCenter ? (
-                         <div className="text-center">
-                            <div className="text-[10px] font-bold text-accent-p uppercase mb-1">Trình Cục</div>
-                            <div className="text-xl md:text-2xl font-bold font-serif text-foreground">
+                       <span className="text-2xl md:text-4xl font-bold font-serif text-foreground">{p.tianGan}</span>
+                       <span className="text-lg md:text-2xl font-bold font-serif text-accent-t drop-shadow-md">{p.diPan}</span>
+                       
+                       {isCenter && (
+                         <div className="text-center mt-1">
+                            <div className="text-[10px] md:text-xs font-bold font-serif text-foreground/80">
                                {qimenPan.ju.type === 'YANG' ? 'Dương' : 'Âm'} {qimenPan.ju.number} Cục
                             </div>
                          </div>
-                       ) : (
-                         <>
-                            <span className="text-2xl md:text-4xl font-bold font-serif text-foreground">{p.tianGan}</span>
-                            <span className="text-lg md:text-2xl font-bold font-serif text-accent-t drop-shadow-md">{p.diPan}</span>
-                         </>
                        )}
                     </div>
                   </motion.div>
@@ -415,6 +524,7 @@ export default function Home() {
               })}
               </AnimatePresence>
             </motion.div>
+            </div>
           </div>
         )}
 
@@ -450,12 +560,12 @@ export default function Home() {
 
               <div className="grid grid-cols-2 gap-3 mb-8">
                  {[
-                   { label: 'Thiên (Tinh)', val: qimenPan.palaces[selectedPalace].tianPan, gan: qimenPan.palaces[selectedPalace].tianGan, color: 'text-blue-300', bg: 'bg-blue-400/5' },
-                   { label: 'Địa (Can)', val: '-', gan: qimenPan.palaces[selectedPalace].diPan, color: 'text-accent-t', bg: 'bg-accent-p/5' },
-                   { label: 'Nhân (Môn)', val: qimenPan.palaces[selectedPalace].renPan, gan: '', color: 'text-emerald-400', bg: 'bg-emerald-400/5' },
-                   { label: 'Thần', val: qimenPan.palaces[selectedPalace].shenPan, gan: '', color: 'text-rose-400', bg: 'bg-rose-400/5' }
+                   { label: 'Thiên (Tinh)', val: qimenPan.palaces[selectedPalace].tianPan, gan: qimenPan.palaces[selectedPalace].tianGan, color: theme === 'light' ? 'text-blue-900' : 'text-blue-300', bg: theme === 'light' ? 'bg-blue-900/5 border-blue-900/10' : 'bg-blue-400/5' },
+                   { label: 'Địa (Can)', val: '-', gan: qimenPan.palaces[selectedPalace].diPan, color: 'text-accent-t', bg: 'bg-accent-p/5 border-accent-p/10' },
+                   { label: 'Nhân (Môn)', val: qimenPan.palaces[selectedPalace].renPan, gan: '', color: theme === 'light' ? 'text-emerald-900' : 'text-emerald-400', bg: theme === 'light' ? 'bg-emerald-900/5 border-emerald-900/10' : 'bg-emerald-400/5' },
+                   { label: 'Thần', val: qimenPan.palaces[selectedPalace].shenPan, gan: '', color: theme === 'light' ? 'text-rose-900' : 'text-rose-400', bg: theme === 'light' ? 'bg-rose-900/5 border-rose-900/10' : 'bg-rose-400/5' }
                  ].map((box, i) => (
-                   <div key={i} className={`${box.bg} border border-border-v rounded-2xl p-4 text-center group transition-transform hover:scale-[1.02]`}>
+                   <div key={i} className={`${box.bg} border rounded-2xl p-4 text-center group transition-transform hover:scale-[1.02] ${theme !== 'light' ? 'border-border-v' : ''}`}>
                       <span className="text-[8px] font-bold text-accent-t uppercase block mb-2">{box.label}</span>
                       {box.gan && <div className="text-2xl font-serif font-bold text-foreground mb-1">{box.gan}</div>}
                       <div className={`text-[10px] font-bold font-serif ${box.color}`}>{box.val}</div>
@@ -487,10 +597,10 @@ export default function Home() {
                  ))}
 
                  {/* Cách cục */}
-                 {patterns[selectedPalace] && patterns[selectedPalace].length > 0 && (
+                 {patterns[selectedPalace] && patterns[selectedPalace].filter(pt => pt.name !== 'Phản Ngâm' && pt.name !== 'Phục Ngâm').length > 0 && (
                    <div className="space-y-3 pt-4">
                       <h4 className="text-[10px] font-bold text-accent-t uppercase tracking-widest border-b border-border-v pb-2">Cách Cục</h4>
-                      {patterns[selectedPalace].map(pt => (
+                      {patterns[selectedPalace].filter(pt => pt.name !== 'Phản Ngâm' && pt.name !== 'Phục Ngâm').map(pt => (
                         <div key={pt.id} className="bg-accent-p/5 border border-accent-p/10 rounded-xl p-3">
                            <div className="flex justify-between items-center mb-1">
                               <span className="text-xs font-serif font-bold text-foreground">{pt.name}</span>
@@ -505,8 +615,9 @@ export default function Home() {
             </motion.div>
           ) : (
              (() => {
-               if (!qimenPan) return null;
-               const lifePalaceIdx = QimenEngine.findStemPalace(qimenPan, birthGan, 'DI') || 1;
+               if (!qimenPan || !timeContext) return null;
+               const searchGan = birthGan === 'Giáp' ? XUN_SHOU_MAP[timeContext.xunShou] : birthGan;
+               const lifePalaceIdx = QimenEngine.findStemPalace(qimenPan, searchGan, 'DI') || 1;
                return (
                 <div className="flex-1 flex flex-col p-6 overflow-y-auto sidebar-hide-scrollbar">
                   {activeCategory === 'TRADING' && (
@@ -517,7 +628,7 @@ export default function Home() {
                     >
                         <div className="flex items-center gap-2 mb-2">
                           <Trophy className="w-4 h-4 text-accent-s" />
-                          <h4 className="text-[9px] font-bold uppercase text-accent-s tracking-widest">Trading Insight</h4>
+                          <h4 className="text-[9px] font-bold uppercase text-accent-s tracking-widest">Kinh Doanh Insight</h4>
                         </div>
                         <p className="text-[10px] text-foreground leading-relaxed">
                           Ưu tiên Entry tại các hướng <b className="text-foreground">Khai/Sinh Môn</b>. Cảnh giác <b className="text-rose-400">Huyền Vũ</b> (Lừa đảo/Scam).

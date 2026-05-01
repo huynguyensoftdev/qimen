@@ -20,12 +20,12 @@
 }
 
 .theme-light {
-  --background: #fafafa;
-  --foreground: #0c0a09;
-  --accent-primary: #442c21; /* Dark Cocoa */
-  --accent-secondary: #9a3412; /* Deep Rust */
-  --accent-text: #44403c;    /* Darker Stone for contrast */
-  --border: rgba(0, 0, 0, 0.15);
+  --background: #E6E1D5; /* Màu giấy cổ điển trung tính (Neutral classic parchment) */
+  --foreground: #1c1815; /* Màu chữ đen ánh nâu đậm (Dark charcoal brown for high contrast) */
+  --accent-primary: #8B1A1A; /* Đỏ chu sa/mận (Cinnabar red) */
+  --accent-secondary: #104C3A; /* Xanh ngọc bích đậm (Dark jade) */
+  --accent-text: #4a3c31;    /* Nâu sẫm đậm để chữ thật rõ (Dark brown for readable accents) */
+  --border: rgba(40, 30, 20, 0.25); /* Viền rõ nét hơn (Stronger border) */
 }
 
 @theme inline {

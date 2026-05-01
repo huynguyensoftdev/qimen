@@ -123,6 +123,38 @@ export const QIMEN_PATTERNS: PatternRule[] = [
     diPan: ['Quý']
   },
   {
+    id: 'thien_van_xuong_khi',
+    name: 'Thiên Vận Xương Khí',
+    severity: 'AUSPICIOUS',
+    description: 'Đinh gia Ất. Quý nhân giúp đỡ, thăng quan tiến chức, tài lộc dồi dào, hôn nhân hạnh phúc.',
+    tianGan: ['Đinh'],
+    diPan: ['Ất']
+  },
+  {
+    id: 'tinh_ky_thu_tro',
+    name: 'Tinh Kỳ Thụ Trở',
+    severity: 'OMINOUS',
+    description: 'Đinh gia Canh. Tin tức bị nghẽn, đi lại gặp trở ngại, mọi việc bất nhất, khó thông suốt.',
+    tianGan: ['Đinh'],
+    diPan: ['Canh']
+  },
+  {
+    id: 'thai_bach_nhap_vong',
+    name: 'Thái Bạch Nhập Vọng',
+    severity: 'OMINOUS',
+    description: 'Canh gia Nhâm. Tranh chấp, thị phi, đề phòng kiện tụng hoặc bị vây hãm trong lưới pháp luật.',
+    tianGan: ['Canh'],
+    diPan: ['Nhâm']
+  },
+  {
+    id: 'phi_can_sat',
+    name: 'Phi Can Sát',
+    severity: 'OMINOUS',
+    description: 'Canh gia Ất. Tượng bị trừng phạt, mọi việc nên thận trọng, không nên manh động.',
+    tianGan: ['Canh'],
+    diPan: ['Ất']
+  },
+  {
     id: 'canh_nham',
     name: 'Tiểu Cách',
     severity: 'OMINOUS',
@@ -165,14 +197,7 @@ export const QIMEN_PATTERNS: PatternRule[] = [
     diPan: ['Ất']
   },
 
-  {
-    id: 'phi_dieu_diet_huyet',
-    name: 'Phi Điểu Điệt Huyệt',
-    severity: 'AUSPICIOUS',
-    description: 'Bính gia Mậu. Tượng chim bay về tổ, tài lộc tự tìm đến, không cầu mà đắc.',
-    tianGan: ['Bính'],
-    diPan: ['Mậu']
-  },
+
   {
     id: 'tam_thang_cung',
     name: 'Tam Thắng Cung',

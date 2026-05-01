@@ -62,6 +62,15 @@ export class PatternEngine {
       if (palace.tianPan !== originalStar && palace.renPan !== originalDoor) return false;
     }
 
+    // 6. Check Phản Ngâm (Tinh, Môn tại cung đối diện cung gốc)
+    if (rule.isPhanNgam) {
+      if (palace.index === 5) return false;
+      const oppositeIndex = 10 - palace.index;
+      const originalStar = BASE_STARS[oppositeIndex];
+      const originalDoor = BASE_DOORS[oppositeIndex];
+      if (palace.tianPan !== originalStar && palace.renPan !== originalDoor) return false;
+    }
+
     // 7. Check Tam Thắng Cung (Thần: Trực Phù, Cửu Thiên, Thái Âm)
     if (rule.isVictory) {
       const victoryDeities = ['Trực Phù', 'Cửu Thiên', 'Thái Âm'];

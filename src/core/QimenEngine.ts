@@ -3,7 +3,7 @@ import { translateJieQi } from './I18nMapping';
 import { 
   JIEQI_JU_MAP, SAN_QI_LIU_YI, TIAN_GAN, DI_ZHI,
   XUN_SHOU_MAP, BASE_STARS, BASE_DOORS, PALACE_RING_CLOCKWISE, BRANCH_ARRAY, EIGHT_DEITIES,
-  XUN_VOID_MAP, HORSE_MAP, BRANCH_PALACE_MAP
+  XUN_VOID_MAP, HORSE_MAP, BRANCH_PALACE_MAP, BASE_DOORS_FEI, NINE_DEITIES_FEI
 } from './QimenConstants';
 
 export enum QimenMethod {
@@ -96,68 +96,86 @@ export class QimenEngine {
   private static calculateZhiRun(timeContext: TimeContext): QimenJu | null {
     const targetDate = timeContext.solarDate;
     
-    // 1. Tìm Thượng Nguyên Phù Đầu (Jia/Ji + Zi/Wu/Mao/You) gần nhất trong vòng 15 ngày qua
+    // 1. Tìm Thượng Nguyên Phù Đầu (Jia/Ji + Zi/Wu/Mao/You) của ngày hiện tại
     let upperFuTouDate = new Date(targetDate.getTime());
     let daysDiff = 0;
-    let found = false;
-
     for (let i = 0; i < 15; i++) {
         const testDate = new Date(targetDate.getTime() - i * 24 * 60 * 60 * 1000);
-        const testSolar = Solar.fromDate(testDate);
-        const testBazi = testSolar.getLunar().getEightChar();
-        const tGan = testBazi.getDayGan(); // Chinese
-        const tZhi = testBazi.getDayZhi(); // Chinese
-        
-        const validGan = tGan === '甲' || tGan === '己';
-        const validZhi = tZhi === '子' || tZhi === '午' || tZhi === '卯' || tZhi === '酉';
-
-        if (validGan && validZhi) {
+        const testBazi = Solar.fromDate(testDate).getLunar().getEightChar();
+        const tGan = testBazi.getDayGan(), tZhi = testBazi.getDayZhi();
+        if ((tGan === '甲' || tGan === '己') && ['子', '午', '卯', '酉'].includes(tZhi)) {
             upperFuTouDate = testDate;
             daysDiff = i;
-            found = true;
+            break;
+        }
+    }
+    const yuan = Math.floor(daysDiff / 5) + 1;
+
+    // 2. Tìm Tiết Khí Chốt (Đại Tuyết hoặc Mang Chủng) gần nhất trong quá khứ
+    let tempLunar = Solar.fromDate(upperFuTouDate).getLunar();
+    let pivotJieQi = null;
+    let safety = 0;
+    
+    // Tìm lùi về quá khứ
+    while (safety < 25) {
+        const prev = tempLunar.getPrevJieQi(true);
+        if (prev.getName() === '芒种' || prev.getName() === '大雪') {
+            pivotJieQi = prev;
+            break;
+        }
+        const pSolar = prev.getSolar();
+        const pDate = new Date(pSolar.getYear(), pSolar.getMonth() - 1, pSolar.getDay() - 1);
+        tempLunar = Solar.fromDate(pDate).getLunar();
+        safety++;
+    }
+
+    if (!pivotJieQi) return this.calculateChaiBu(timeContext);
+
+    // 3. Tìm Phù Đầu của Tiết Khí Chốt
+    const pSolar = pivotJieQi.getSolar();
+    const pivotDate = new Date(pSolar.getYear(), pSolar.getMonth() - 1, pSolar.getDay());
+    let pivotFuTouDate = new Date(pivotDate.getTime());
+    
+    for (let i = 0; i <= 15; i++) {
+        const testDate = new Date(pivotDate.getTime() - i * 24 * 60 * 60 * 1000);
+        const testBazi = Solar.fromDate(testDate).getLunar().getEightChar();
+        const tGan = testBazi.getDayGan(), tZhi = testBazi.getDayZhi();
+        if ((tGan === '甲' || tGan === '己') && ['子', '午', '卯', '酉'].includes(tZhi)) {
+            pivotFuTouDate = testDate;
             break;
         }
     }
 
-    if (!found) return this.calculateChaiBu(timeContext); // Fallback an toàn
+    // 4. Kiểm tra Nhuận tại chốt
+    // Nếu Phù Đầu đến trước tiết khí >= 9 ngày (Siêu Thần >= 9)
+    const distToPivot = Math.round((pivotDate.getTime() - pivotFuTouDate.getTime()) / 86400000);
+    const isRun = distToPivot >= 9;
 
-    // 2. Xác định Nguyên (Thượng, Trung, Hạ)
-    const yuan = Math.floor(daysDiff / 5) + 1; // 0-4: Thượng, 5-9: Trung, 10-14: Hạ
-
-    // 3. Tìm Tiết Khí gần nhất với Thượng Nguyên Phù Đầu để xác định Tiết Khí chủ quản
-    const fuTouSolar = Solar.fromDate(upperFuTouDate);
-    const fuTouLunar = fuTouSolar.getLunar();
+    // 5. Đếm số block 15 ngày từ Phù Đầu chốt đến Phù Đầu hiện tại
+    const blocksPassed = Math.round((upperFuTouDate.getTime() - pivotFuTouDate.getTime()) / (15 * 86400000));
     
-    const prevJieQi = fuTouLunar.getPrevJieQi(true);
-    const nextJieQi = fuTouLunar.getNextJieQi(true);
+    // 6. Ánh xạ sang danh sách Tiết Khí
+    const SEQ_MANG_ZHONG = [
+      'Mang chủng', 'Hạ chí', 'Tiểu thử', 'Đại thử', 'Lập thu', 'Xử thử', 'Bạch lộ', 'Thu phân', 'Hàn lộ', 'Sương giáng', 'Lập đông', 'Tiểu tuyết', 'Đại tuyết'
+    ];
+    const SEQ_DA_XUE = [
+      'Đại tuyết', 'Đông chí', 'Tiểu hàn', 'Đại hàn', 'Lập xuân', 'Vũ thủy', 'Kinh trập', 'Xuân phân', 'Thanh minh', 'Cốc vũ', 'Lập hạ', 'Tiểu mãn', 'Mang chủng'
+    ];
 
-    const dsPrev = prevJieQi.getSolar();
-    const prevDate = new Date(dsPrev.getYear(), dsPrev.getMonth() - 1, dsPrev.getDay(), dsPrev.getHour(), dsPrev.getMinute(), dsPrev.getSecond());
+    const isMangZhong = pivotJieQi.getName() === '芒种';
+    const sequence = isMangZhong ? SEQ_MANG_ZHONG : SEQ_DA_XUE;
+
+    // Nếu có nhuận, block 1 sẽ lặp lại tiết khí chốt (index 0)
+    let jieQiIndex = isRun ? Math.max(0, blocksPassed - 1) : blocksPassed;
     
-    const dsNext = nextJieQi.getSolar();
-    const nextDate = new Date(dsNext.getYear(), dsNext.getMonth() - 1, dsNext.getDay(), dsNext.getHour(), dsNext.getMinute(), dsNext.getSecond());
+    // Tránh vượt quá mảng (rất hiếm, nhưng để an toàn)
+    if (jieQiIndex >= sequence.length) jieQiIndex = sequence.length - 1;
 
-    const distPrev = Math.abs(upperFuTouDate.getTime() - prevDate.getTime());
-    const distNext = Math.abs(upperFuTouDate.getTime() - nextDate.getTime());
-
-    // Nếu khoảng cách đến Tiết tới <= khoảng cách đến Tiết trước => Siêu Thần (Chao Shen)
-    // Nếu khoảng cách đến Tiết trước < khoảng cách đến Tiết tới => Tiếp Khí / Nhuận (Jie Qi / Run)
-    let assignedJieQiNameCh = '';
-    if (distNext <= distPrev) {
-        assignedJieQiNameCh = nextJieQi.getName();
-    } else {
-        assignedJieQiNameCh = prevJieQi.getName();
-    }
-
-    const assignedJieQiName = translateJieQi(assignedJieQiNameCh);
-
+    const assignedJieQiName = sequence[jieQiIndex];
     const jqData = JIEQI_JU_MAP[assignedJieQiName];
     if (!jqData) return this.calculateChaiBu(timeContext);
 
-    let juNumber = 1;
-    if (yuan === 1) juNumber = jqData.upper;
-    else if (yuan === 2) juNumber = jqData.middle;
-    else if (yuan === 3) juNumber = jqData.lower;
+    let juNumber = yuan === 1 ? jqData.upper : yuan === 2 ? jqData.middle : jqData.lower;
 
     return {
       type: jqData.type,
@@ -202,11 +220,11 @@ export class QimenEngine {
       }
     }
     
-    // Ký cung: Nếu tuần thủ rớt vào Trung Cung (Cung 5) -> Ký tại cung 2 (Khôn) cho đa số trường hợp
-    let actualXunPalace = xunPalace === 5 ? 2 : xunPalace;
+    // Ký cung: Nếu tuần thủ rớt vào Trung Cung (Cung 5) -> Ký tại cung 2 (Khôn) cho Chuyển Bàn, giữ nguyên cho Phi Cung
+    let actualXunPalace = (method === QimenMethod.PHI_CUNG) ? xunPalace : (xunPalace === 5 ? 2 : xunPalace);
 
-    const zhiFu = BASE_STARS[actualXunPalace];
-    const zhiShi = BASE_DOORS[actualXunPalace];
+    const zhiFu = BASE_STARS[actualXunPalace] || BASE_STARS[5];
+    const zhiShi = (method === QimenMethod.PHI_CUNG) ? BASE_DOORS_FEI[actualXunPalace] : BASE_DOORS[actualXunPalace];
 
     // 3. Xoay Thiên Bàn (Cửu Tinh) & Can Thiên Bàn
     // Trực Phù (ZhiFu) chạy đến cung có chứa Can Giờ trên Địa Bàn
@@ -223,89 +241,96 @@ export class QimenEngine {
         }
       }
     }
-    if (targetZhiFuPalace === 5) targetZhiFuPalace = 2; // Cung 5 ký cung 2
+    if (method !== QimenMethod.PHI_CUNG && targetZhiFuPalace === 5) targetZhiFuPalace = 2; // Cung 5 ký cung 2 cho Chuyển Bàn
 
-    // Xoay 8 sao vòng ngoài
-    const ring = PALACE_RING_CLOCKWISE;
-    const startIdx = ring.indexOf(actualXunPalace);
-    const targetIdx = ring.indexOf(targetZhiFuPalace);
-    const shift = targetIdx - startIdx;
-
-    for (let i = 0; i < 8; i++) {
-      const originalPalace = ring[i];
-      let newIdx = (i + shift) % 8;
-      if (newIdx < 0) newIdx += 8;
-      const targetPalaceForStar = ring[newIdx];
-      
-      palaces[targetPalaceForStar].tianPan = BASE_STARS[originalPalace];
-      // Can thiên bàn đi theo Cửu Tinh từ địa bàn gốc
-      palaces[targetPalaceForStar].tianGan = palaces[originalPalace].diPan;
-    }
-    // Cầm Tinh ở cung 5 đi theo Nhuế (cung 2)
-    palaces[5].tianPan = 'Cầm';
-    palaces[5].tianGan = palaces[5].diPan;
-
-    // 4. Xoay Thần Bàn (Bát Thần)
-    // Tiểu Trực Phù (Thần) luôn luôn nằm cùng cung với Đại Trực Phù (Sao)
-    // Nếu Dương Cục: Xoay vòng thuận (chiều kim đồng hồ), Âm Cục: Xoay nghịch
-    const shenShiftStep = isYang ? 1 : -1;
-    let currentShenIdx = targetIdx; // Bắt đầu từ cung của Trực Phù
-    for (let i = 0; i < 8; i++) {
-      palaces[ring[currentShenIdx]].shenPan = EIGHT_DEITIES[i];
-      currentShenIdx = (currentShenIdx + shenShiftStep) % 8;
-      if (currentShenIdx < 0) currentShenIdx += 8;
-    }
-
-    // 5. Xoay Nhân Bàn (Trực Sử)
-    const xunZhiSplit = xunShou.split(' ')[1] || xunShou.substring(1, 2); 
-    const hourZhi = timeContext.bazi.hour.zhi;
-    const xunZhiIdx = BRANCH_ARRAY.indexOf(xunZhiSplit);
-    const hourZhiIdx = BRANCH_ARRAY.indexOf(hourZhi);
-    
-    let hoursPassed = hourZhiIdx - xunZhiIdx;
-    if (hoursPassed < 0) hoursPassed += 12;
-
-    let currentShiPalace = actualXunPalace;
-    for (let i = 0; i < hoursPassed; i++) {
-        // Trong Phi Cung, bay theo Lạc Thư (1->2->3... hoặc 9->8->7...) chứ không bay vòng quanh.
-        // Đơn giản hóa: Nếu là Phi Cung, Trực Sử bay nhảy theo đường chéo Lạc Phân
-        if (method === QimenMethod.PHI_CUNG) {
-            currentShiPalace += step; 
-            if (currentShiPalace > 9) currentShiPalace = 1;
-            if (currentShiPalace < 1) currentShiPalace = 9;
-        } else {
-            // Chuyển theo Cửu cung
-            currentShiPalace += step; 
-            if (currentShiPalace > 9) currentShiPalace = 1;
-            if (currentShiPalace < 1) currentShiPalace = 9;
-        }
-    }
-    
-    const shiStartIdx = ring.indexOf(actualXunPalace);
-    let shiTargetIdx = ring.indexOf(currentShiPalace); 
-    if (currentShiPalace === 5) {
-      shiTargetIdx = ring.indexOf(2);
-    }
-    
-    // Nếu Phi Cung, Bát Môn bay thẳng (Luo Shu Flight) chứ không xoay (Ring)
     if (method === QimenMethod.PHI_CUNG) {
-       for (let i = 1; i <= 9; i++) {
-          if (i !== 5) { // Tạm gán Bát Môn theo vị trí gốc đảo ngược để User thấy sự thay đổi.
-            palaces[i].renPan = BASE_DOORS[(10 - i) % 9 || 9] + ' (Phi)'; 
-          }
-       }
+      // 3. Phi Thiên Bàn (Cửu Tinh)
+      const starStep = targetZhiFuPalace - actualXunPalace;
+      for (let i = 1; i <= 9; i++) {
+        const targetPalace = ((i + starStep - 1) % 9 + 9) % 9 + 1;
+        palaces[targetPalace].tianPan = BASE_STARS[i];
+        palaces[targetPalace].tianGan = palaces[i].diPan;
+      }
+      
+      // 4. Phi Thần Bàn (Cửu Thần)
+      for (let i = 0; i < 9; i++) {
+        const targetPalace = ((targetZhiFuPalace - 1 + (isYang ? i : -i)) % 9 + 9) % 9 + 1;
+        palaces[targetPalace].shenPan = NINE_DEITIES_FEI[i];
+      }
+
+      // 5. Phi Nhân Bàn (Cửu Môn)
+      const xunZhiSplit = xunShou.split(' ')[1] || xunShou.substring(1, 2); 
+      const hourZhi = timeContext.bazi.hour.zhi;
+      const xunZhiIdx = BRANCH_ARRAY.indexOf(xunZhiSplit);
+      const hourZhiIdx = BRANCH_ARRAY.indexOf(hourZhi);
+      
+      let hoursPassed = hourZhiIdx - xunZhiIdx;
+      if (hoursPassed < 0) hoursPassed += 12;
+
+      let currentShiPalace = ((actualXunPalace - 1 + step * hoursPassed) % 9 + 9) % 9 + 1;
+      const doorStep = currentShiPalace - actualXunPalace;
+
+      for (let i = 1; i <= 9; i++) {
+        const targetPalace = ((i + doorStep - 1) % 9 + 9) % 9 + 1;
+        palaces[targetPalace].renPan = BASE_DOORS_FEI[i];
+      }
+
     } else {
+      // CHUYỂN BÀN (ZHUA PAN) - Xoay vòng 8 cung biên
+      const ring = PALACE_RING_CLOCKWISE;
+      const startIdx = ring.indexOf(actualXunPalace);
+      const targetIdx = ring.indexOf(targetZhiFuPalace);
+      const shift = targetIdx - startIdx;
+
+      for (let i = 0; i < 8; i++) {
+        const originalPalace = ring[i];
+        let newIdx = (i + shift) % 8;
+        if (newIdx < 0) newIdx += 8;
+        const targetPalaceForStar = ring[newIdx];
+        
+        palaces[targetPalaceForStar].tianPan = BASE_STARS[originalPalace];
+        palaces[targetPalaceForStar].tianGan = palaces[originalPalace].diPan;
+      }
+      palaces[5].tianPan = 'Cầm';
+      palaces[5].tianGan = palaces[5].diPan;
+
+      const shenShiftStep = isYang ? 1 : -1;
+      let currentShenIdx = targetIdx;
+      for (let i = 0; i < 8; i++) {
+        palaces[ring[currentShenIdx]].shenPan = EIGHT_DEITIES[i];
+        currentShenIdx = (currentShenIdx + shenShiftStep) % 8;
+        if (currentShenIdx < 0) currentShenIdx += 8;
+      }
+
+      const xunZhiSplit = xunShou.split(' ')[1] || xunShou.substring(1, 2); 
+      const hourZhi = timeContext.bazi.hour.zhi;
+      const xunZhiIdx = BRANCH_ARRAY.indexOf(xunZhiSplit);
+      const hourZhiIdx = BRANCH_ARRAY.indexOf(hourZhi);
+      
+      let hoursPassed = hourZhiIdx - xunZhiIdx;
+      if (hoursPassed < 0) hoursPassed += 12;
+
+      let currentShiPalace = actualXunPalace;
+      for (let i = 0; i < hoursPassed; i++) {
+          currentShiPalace += step; 
+          if (currentShiPalace > 9) currentShiPalace = 1;
+          if (currentShiPalace < 1) currentShiPalace = 9;
+      }
+      
+      const shiStartIdx = ring.indexOf(actualXunPalace);
+      let shiTargetIdx = ring.indexOf(currentShiPalace); 
+      if (currentShiPalace === 5) shiTargetIdx = ring.indexOf(2);
+      
       const shiShift = shiTargetIdx - shiStartIdx;
       for (let i = 0; i < 8; i++) {
         const originalPalace = ring[i];
         let newIdx = (i + shiShift) % 8;
         if (newIdx < 0) newIdx += 8;
         const targetPalaceForDoor = ring[newIdx];
-        
         palaces[targetPalaceForDoor].renPan = BASE_DOORS[originalPalace];
       }
+      palaces[5].renPan = '';
     }
-    palaces[5].renPan = ''; // Trung cung không có Môn
 
     // 6. Tính Tuần Không và Dịch Mã
     const voidBranches = XUN_VOID_MAP[xunShou] || [];

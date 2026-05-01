@@ -53,8 +53,14 @@ export const EIGHT_DOORS_CORRECTED = ['Hưu', 'Tử', 'Thương', 'Đỗ', 'Trun
 export const EIGHT_DOORS_RING = ['Hưu', 'Sinh', 'Thương', 'Đỗ', 'Cảnh', 'Tử', 'Kinh', 'Khai']; 
 // Mảng vòng Bát Môn theo chiều kim đồng hồ (Khảm 1 -> Cấn 8 -> Chấn 3 -> Tốn 4 -> Ly 9 -> Khôn 2 -> Đoài 7 -> Càn 6)
 
-// Bát Thần (8 Thần)
+// Cửu Môn (Phi Cung)
+export const NINE_DOORS_FEI = ['Hưu', 'Tử', 'Thương', 'Đỗ', 'Trung', 'Khai', 'Kinh', 'Sinh', 'Cảnh'];
+
+// Bát Thần (8 Thần - Chuyển Bàn)
 export const EIGHT_DEITIES = ['Trực Phù', 'Đằng Xà', 'Thái Âm', 'Lục Hợp', 'Bạch Hổ', 'Huyền Vũ', 'Cửu Địa', 'Cửu Thiên'];
+
+// Cửu Thần (9 Thần - Phi Cung)
+export const NINE_DEITIES_FEI = ['Trực Phù', 'Đằng Xà', 'Thái Âm', 'Lục Hợp', 'Câu Trận', 'Chu Tước', 'Cửu Địa', 'Cửu Thiên', 'Thái Thường'];
 
 // Map Tuần Thủ -> Lục Nghi
 export const XUN_SHOU_MAP: Record<string, string> = {
@@ -73,6 +79,11 @@ export const BASE_STARS: Record<number, string> = {
 
 export const BASE_DOORS: Record<number, string> = {
   1: 'Hưu', 2: 'Tử', 3: 'Thương', 4: 'Đỗ', 5: 'Tử', // Cung 5 kí cung 2
+  6: 'Khai', 7: 'Kinh', 8: 'Sinh', 9: 'Cảnh'
+};
+
+export const BASE_DOORS_FEI: Record<number, string> = {
+  1: 'Hưu', 2: 'Tử', 3: 'Thương', 4: 'Đỗ', 5: 'Trung', 
   6: 'Khai', 7: 'Kinh', 8: 'Sinh', 9: 'Cảnh'
 };
 
