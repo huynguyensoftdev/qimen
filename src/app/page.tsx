@@ -504,84 +504,90 @@ export default function Home() {
               </div>
             </motion.div>
           ) : (
-            <div className="flex-1 flex flex-col p-6 overflow-y-auto sidebar-hide-scrollbar">
-               {activeCategory === 'TRADING' && (
-                 <motion.div 
-                   initial={{ opacity: 0, y: -10 }}
-                   animate={{ opacity: 1, y: 0 }}
-                   className="mb-6 p-4 rounded-2xl bg-accent-s/10 border border-accent-s/20"
-                 >
-                    <div className="flex items-center gap-2 mb-2">
-                       <Trophy className="w-4 h-4 text-accent-s" />
-                       <h4 className="text-[9px] font-bold uppercase text-accent-s tracking-widest">Trading Insight</h4>
-                    </div>
-                    <p className="text-[10px] text-foreground leading-relaxed">
-                      Ưu tiên Entry tại các hướng <b className="text-foreground">Khai/Sinh Môn</b>. Cảnh giác <b className="text-rose-400">Huyền Vũ</b> (Lừa đảo/Scam).
-                    </p>
-                 </motion.div>
-               )}
-               <div className="flex items-center gap-2 mb-4">
-                  <Compass className="w-5 h-5 text-accent-s" />
-                  <h3 className="text-sm font-bold uppercase tracking-widest text-foreground">Gợi ý Chọn Hướng</h3>
-               </div>
-
-               {/* CATEGORY SELECTOR */}
-               <div className="flex flex-wrap gap-2 mb-6">
-                 {(Object.keys(CATEGORY_LABELS) as TaskCategory[]).map((cat) => (
-                   <button
-                     key={cat}
-                     onClick={() => handleCategoryChange(cat)}
-                     className={`px-3 py-1.5 rounded-full text-[9px] font-bold uppercase border transition-all ${
-                       activeCategory === cat
-                         ? 'bg-accent-s/20 border-accent-s text-accent-s'
-                         : 'bg-accent-t/5 border-border-v text-accent-t hover:border-white/20'
-                     }`}
-                   >
-                     {CATEGORY_LABELS[cat]}
-                   </button>
-                 ))}
-               </div>
-               
-               <div className="space-y-4">
-                  {directionScores.slice(0, 3).map((dir, idx) => (
+             (() => {
+               if (!qimenPan) return null;
+               const lifePalaceIdx = QimenEngine.findStemPalace(qimenPan, birthGan, 'DI') || 1;
+               return (
+                <div className="flex-1 flex flex-col p-6 overflow-y-auto sidebar-hide-scrollbar">
+                  {activeCategory === 'TRADING' && (
                     <motion.div 
-                      key={dir.index}
-                      initial={{ opacity: 0, y: 10 }}
+                      initial={{ opacity: 0, y: -10 }}
                       animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: idx * 0.1 }}
-                      onClick={() => setSelectedPalace(dir.index)}
-                      className="bg-accent-t/5 border border-border-v rounded-2xl p-4 cursor-pointer hover:bg-white/10 transition-all group"
+                      className="mb-6 p-4 rounded-2xl bg-accent-s/10 border border-accent-s/20"
                     >
-                      <div className="flex justify-between items-start mb-3">
-                         <div>
-                            <div className="text-[8px] font-bold text-accent-t uppercase mb-1">Hạng {idx + 1} - Cung {dir.index}</div>
-                            <div className="text-xl font-serif font-bold text-foreground">{dir.label}</div>
-                         </div>
-                         <div className="flex items-center gap-1 bg-emerald-500/10 text-emerald-400 px-2 py-1 rounded-lg">
-                            <Trophy className="w-3 h-3" />
-                            <span className="text-xs font-mono font-bold">+{dir.score}</span>
-                         </div>
-                      </div>
-                      <div className="flex flex-wrap gap-1.5">
-                         {dir.reasons.slice(0, 3).map((r, i) => (
-                           <span key={i} className="text-[9px] bg-black/30 text-accent-t px-2 py-1 rounded-md border border-border-v">{r}</span>
-                         ))}
-                      </div>
+                        <div className="flex items-center gap-2 mb-2">
+                          <Trophy className="w-4 h-4 text-accent-s" />
+                          <h4 className="text-[9px] font-bold uppercase text-accent-s tracking-widest">Trading Insight</h4>
+                        </div>
+                        <p className="text-[10px] text-foreground leading-relaxed">
+                          Ưu tiên Entry tại các hướng <b className="text-foreground">Khai/Sinh Môn</b>. Cảnh giác <b className="text-rose-400">Huyền Vũ</b> (Lừa đảo/Scam).
+                        </p>
                     </motion.div>
-                  ))}
-               </div>
-
-               <div className="mt-8 p-4 bg-accent-p/5 border border-accent-p/10 rounded-2xl">
-                  <div className="flex items-center gap-2 mb-3">
-                     <Stars className="w-4 h-4 text-accent-p" />
-                     <h4 className="text-[10px] font-bold uppercase text-accent-p tracking-widest">Ghi chú Mệnh Chủ</h4>
+                  )}
+                  <div className="flex items-center gap-2 mb-4">
+                      <Compass className="w-5 h-5 text-accent-s" />
+                      <h3 className="text-sm font-bold uppercase tracking-widest text-foreground">Gợi ý Chọn Hướng</h3>
                   </div>
-                  <p className={`text-xs leading-relaxed ${theme === 'light' ? 'text-foreground font-medium' : 'text-neutral-400 italic'}`}>
-                    "Mệnh chủ Can <span className="text-accent-p font-bold">{birthGan}</span> đang ngụ tại <span className="text-foreground font-bold">Cung {QimenEngine.findStemPalace(qimenPan, birthGan, 'DI')}</span> ({PALACE_INFO[QimenEngine.findStemPalace(qimenPan, birthGan, 'DI') || 1].bagua}). 
-                    Hãy quan sát các cát tinh và môn tại cung này để biết vận trình cá nhân trong canh giờ hiện tại."
-                  </p>
-               </div>
-            </div>
+
+                  {/* CATEGORY SELECTOR */}
+                  <div className="flex flex-wrap gap-2 mb-6">
+                    {(Object.keys(CATEGORY_LABELS) as TaskCategory[]).map((cat) => (
+                      <button
+                        key={cat}
+                        onClick={() => handleCategoryChange(cat)}
+                        className={`px-3 py-1.5 rounded-full text-[9px] font-bold uppercase border transition-all ${
+                          activeCategory === cat
+                            ? 'bg-accent-s/20 border-accent-s text-accent-s'
+                            : 'bg-accent-t/5 border-border-v text-accent-t hover:border-white/20'
+                        }`}
+                      >
+                        {CATEGORY_LABELS[cat]}
+                      </button>
+                    ))}
+                  </div>
+                  
+                  <div className="space-y-4">
+                      {directionScores.slice(0, 3).map((dir, idx) => (
+                        <motion.div 
+                          key={dir.index}
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ delay: idx * 0.1 }}
+                          onClick={() => setSelectedPalace(dir.index)}
+                          className="bg-accent-t/5 border border-border-v rounded-2xl p-4 cursor-pointer hover:bg-white/10 transition-all group"
+                        >
+                          <div className="flex justify-between items-start mb-3">
+                            <div>
+                                <div className="text-[8px] font-bold text-accent-t uppercase mb-1">Hạng {idx + 1} - Cung {dir.index}</div>
+                                <div className="text-xl font-serif font-bold text-foreground">{dir.label}</div>
+                            </div>
+                            <div className="flex items-center gap-1 bg-emerald-500/10 text-emerald-400 px-2 py-1 rounded-lg">
+                                <Trophy className="w-3 h-3" />
+                                <span className="text-xs font-mono font-bold">+{dir.score}</span>
+                            </div>
+                          </div>
+                          <div className="flex flex-wrap gap-1.5">
+                            {dir.reasons.slice(0, 3).map((r, i) => (
+                              <span key={i} className="text-[9px] bg-black/30 text-accent-t px-2 py-1 rounded-md border border-border-v">{r}</span>
+                            ))}
+                          </div>
+                        </motion.div>
+                      ))}
+                  </div>
+
+                  <div className="mt-8 p-4 bg-accent-p/5 border border-accent-p/10 rounded-2xl">
+                      <div className="flex items-center gap-2 mb-3">
+                        <Stars className="w-4 h-4 text-accent-p" />
+                        <h4 className="text-[10px] font-bold uppercase text-accent-p tracking-widest">Ghi chú Mệnh Chủ</h4>
+                      </div>
+                      <p className={`text-xs leading-relaxed ${theme === 'light' ? 'text-foreground font-medium' : 'text-neutral-400 italic'}`}>
+                        "Mệnh chủ Can <span className="text-accent-p font-bold">{birthGan}</span> đang ngụ tại <span className="text-foreground font-bold">Cung {lifePalaceIdx}</span> ({PALACE_INFO[lifePalaceIdx].bagua}). 
+                        Hãy quan sát các cát tinh và môn tại cung này để biết vận trình cá nhân trong canh giờ hiện tại."
+                      </p>
+                  </div>
+                </div>
+               );
+             })()
           )}
         </AnimatePresence>
       </div>
