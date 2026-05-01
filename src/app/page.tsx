@@ -400,7 +400,7 @@ export default function Home() {
                          <div className="text-center">
                             <div className="text-[10px] font-bold text-accent-p uppercase mb-1">Trình Cục</div>
                             <div className="text-xl md:text-2xl font-bold font-serif text-foreground">
-                               {qimenPan.ju.type === 'YANG' ? 'Dương' : 'Âm'} {qimenPan.ju.value} Cục
+                               {qimenPan.ju.type === 'YANG' ? 'Dương' : 'Âm'} {qimenPan.ju.number} Cục
                             </div>
                          </div>
                        ) : (
