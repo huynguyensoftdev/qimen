@@ -25,8 +25,10 @@ export interface TimeContext {
   jieQi: {
     current: { name: string; date: Date };
     next: { name: string; date: Date };
+    isYang: boolean;
   };
-  xunShou: string; // Tuần thủ của giờ (VD: Giáp Tý)
+  xunShou: string;
+  dayXunShou: string;
 }
 
 /**
@@ -58,7 +60,8 @@ export class TimeEngine {
         hour: { gan: GAN_ZH_TO_VI[baZi.getTimeGan()] || baZi.getTimeGan(), zhi: ZHI_ZH_TO_VI[baZi.getTimeZhi()] || baZi.getTimeZhi() },
       },
       jieQi: this.getCurrentAndNextJieQi(lunar),
-      xunShou: translateGanZhi(baZi.getTimeXun()), // Tuần thủ (vd: Giáp Tý, Giáp Tuất)
+      xunShou: translateGanZhi(baZi.getTimeXun()), // Tuần thủ giờ
+      dayXunShou: translateGanZhi(baZi.getDayXun()), // Tuần thủ ngày
     };
   }
 
@@ -68,6 +71,7 @@ export class TimeEngine {
   private static getCurrentAndNextJieQi(lunar: any): {
     current: { name: string; date: Date };
     next: { name: string; date: Date };
+    isYang: boolean;
   } {
     const prevJieQi = lunar.getPrevJieQi(true);
     const nextJieQi = lunar.getNextJieQi(true);
@@ -84,7 +88,23 @@ export class TimeEngine {
         name: translateJieQi(nextJieQi.getName()),
         date: new Date(nextSolar.getYear(), nextSolar.getMonth() - 1, nextSolar.getDay(), nextSolar.getHour(), nextSolar.getMinute(), nextSolar.getSecond()),
       },
+      isYang: this.isYangDun(lunar),
     };
+  }
+
+  /**
+   * Xác định Dương Độn hay Âm Độn
+   */
+  private static isYangDun(lunar: any): boolean {
+    const solar = lunar.getSolar();
+    const month = solar.getMonth();
+    const day = solar.getDay();
+    
+    // Đơn giản hóa: Sau Đông Chí (tháng 12) đến trước Hạ Chí (tháng 6) là Dương Độn
+    // Trong thực tế cần so sánh chính xác với ngày tiết khí
+    const currentJieQi = lunar.getPrevJieQi(true).getName();
+    const yangJieQi = ['冬至', '小寒', '大寒', '立春', '雨水', '惊蛰', '春分', '清明', '谷雨', '立夏', '小满', '芒种'];
+    return yangJieQi.includes(currentJieQi);
   }
 
   /**

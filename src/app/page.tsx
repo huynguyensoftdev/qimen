@@ -2,12 +2,15 @@
 
 import { useState, useEffect } from "react";
 import { TimeEngine, TimeContext } from "@/core/TimeEngine";
-import { QimenEngine, QimenMethod, QimenJu, QimenPan } from "@/core/QimenEngine";
+import { QimenEngine, QimenMethod, QimenJu, QimenPan, QimenChartType } from "@/core/QimenEngine";
 import { PatternEngine } from "@/core/PatternEngine";
 import { PatternRule } from "@/data/PatternData";
 import { PALACE_INFO, TIAN_GAN, XUN_SHOU_MAP } from "@/core/QimenConstants";
 import { DOOR_DETAILS, STAR_DETAILS, DEITY_DETAILS } from "@/data/InterpretationData";
-import { Clock, Calendar as CalendarIcon, Moon, Sun, ArrowRight, Stars, MoveRight, X, Palette, BookOpen, LayoutGrid, Compass, User, Trophy } from "lucide-react";
+import { getDetailedInterpretation } from "@/data/FormationDetailData";
+import { EVIDENTIAL_MAP } from "@/data/EvidentialData";
+import starHourEvidence from "@/data/star_hour_evidence_vi.json";
+import { Clock, Calendar as CalendarIcon, Moon, Sun, ArrowRight, Stars, MoveRight, X, Palette, BookOpen, LayoutGrid, Compass, User, Trophy, FileText, Eye } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 type ThemeType = 'cyber' | 'zen' | 'light';
@@ -22,12 +25,29 @@ interface DirectionScore {
 
 const CATEGORY_LABELS: Record<TaskCategory, string> = {
   GENERAL: 'Tổng Quan',
-  WEALTH: 'Cầu Tài Lộc',
-  CAREER: 'Công Danh/Thi Cử',
-  MARRIAGE: 'Hôn Nhân/Tình Cảm',
-  HEALTH: 'Sức Khỏe/Cầu Y',
-  CONFLICT: 'Tranh Chấp/Kiện Tụng',
-  TRADING: 'Kinh Doanh/Đầu Tư'
+  WEALTH: 'Tài Lộc',
+  CAREER: 'Sự Nghiệp',
+  MARRIAGE: 'Hôn Nhân',
+  HEALTH: 'Sức Khỏe',
+  CONFLICT: 'Cạnh Tranh',
+  TRADING: 'Giao Dịch'
+};
+
+const STAR_ID_MAP: Record<string, string> = {
+  'Bồng': 'TianPeng',
+  'Nhuế': 'TianRui',
+  'Xung': 'TianChong',
+  'Phụ': 'TianFu',
+  'Cầm': 'TianQin',
+  'Tâm': 'TianXin',
+  'Trụ': 'TianZhu',
+  'Nhậm': 'TianRen',
+  'Anh': 'TianYing'
+};
+
+const BRANCH_EN_MAP: Record<string, string> = {
+  'Tý': 'Zi', 'Sửu': 'Chou', 'Dần': 'Yin', 'Mão': 'Mao', 'Thìn': 'Chen', 'Tỵ': 'Si',
+  'Ngọ': 'Wu', 'Mùi': 'Wei', 'Thân': 'Shen', 'Dậu': 'You', 'Tuất': 'Xu', 'Hợi': 'Hai'
 };
 
 const CelestialBackground = ({ theme }: { theme: ThemeType }) => (
@@ -139,6 +159,7 @@ export default function Home() {
   const [dateStr, setDateStr] = useState<string>("");
   const [timeContext, setTimeContext] = useState<TimeContext | null>(null);
   const [method, setMethod] = useState<QimenMethod>(QimenMethod.CHAI_BU);
+  const [chartType, setChartType] = useState<QimenChartType>(QimenChartType.HOUR);
   const [qimenPan, setQimenPan] = useState<QimenPan | null>(null);
   const [patterns, setPatterns] = useState<Record<number, PatternRule[]>>({});
   const [selectedPalace, setSelectedPalace] = useState<number | null>(null);
@@ -152,8 +173,21 @@ export default function Home() {
     const tzOffset = now.getTimezoneOffset() * 60000;
     const localISOTime = new Date(now.getTime() - tzOffset).toISOString().slice(0, 16);
     setDateStr(localISOTime);
-    calculate(new Date(localISOTime), method);
+    const ctx = TimeEngine.calculateTimeContext(now);
+    setTimeContext(ctx);
   }, []);
+
+  useEffect(() => {
+    if (timeContext) {
+      const pan = QimenEngine.calculatePan(method, timeContext, chartType);
+      setQimenPan(pan);
+      if (pan) {
+        const analyzedPatterns = PatternEngine.analyzePan(pan);
+        setPatterns(analyzedPatterns);
+        calculateScores(pan, analyzedPatterns, activeCategory);
+      }
+    }
+  }, [timeContext, method, chartType, activeCategory]);
 
   const calculateScores = (pan: QimenPan, currentPatterns: Record<number, PatternRule[]>, category: TaskCategory) => {
     const scores: DirectionScore[] = [];
@@ -230,11 +264,11 @@ export default function Home() {
     setDirectionScores(scores.sort((a, b) => b.score - a.score));
   };
 
-  const calculate = (d: Date, mMethod: QimenMethod, category: TaskCategory = activeCategory) => {
+  const calculate = (d: Date, mMethod: QimenMethod, category: TaskCategory = activeCategory, cType: QimenChartType = chartType) => {
     try {
       const ctx = TimeEngine.calculateTimeContext(d);
       setTimeContext(ctx);
-      const pan = QimenEngine.calculatePan(mMethod, ctx);
+      const pan = QimenEngine.calculatePan(mMethod, ctx, cType);
       setQimenPan(pan);
       if (pan) {
         const analyzedPatterns = PatternEngine.analyzePan(pan);
@@ -275,6 +309,13 @@ export default function Home() {
     setMethod(newMethod);
     if (dateStr) {
       calculate(new Date(dateStr), newMethod);
+    }
+  };
+
+  const handleChartTypeChange = (newType: QimenChartType) => {
+    setChartType(newType);
+    if (dateStr) {
+      calculate(new Date(dateStr), method, activeCategory, newType);
     }
   };
 
@@ -321,6 +362,22 @@ export default function Home() {
               </button>
             </div>
           </header>
+
+          {/* Chart Type Selector - NEW */}
+          <div className="flex bg-neutral-900/50 p-1 rounded-2xl border border-border-v w-full">
+            {[
+              { id: QimenChartType.HOUR, label: 'Thời Bàn' },
+              { id: QimenChartType.DAY, label: 'Nhật Bàn' }
+            ].map(type => (
+              <button
+                key={type.id}
+                onClick={() => handleChartTypeChange(type.id)}
+                className={`flex-1 py-2.5 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all ${chartType === type.id ? 'bg-accent-s text-white shadow-lg' : 'text-neutral-500 hover:text-neutral-300'}`}
+              >
+                {type.label}
+              </button>
+            ))}
+          </div>
 
           <div className="space-y-4">
             <div>
@@ -596,7 +653,80 @@ export default function Home() {
                    </div>
                  ))}
 
-                 {/* Cách cục */}
+                  {/* Luận giải Chuyên sâu từ Cổ thư (100 Formations) */}
+                  {(() => {
+                    const p = qimenPan.palaces[selectedPalace];
+                    const interpretation = getDetailedInterpretation(p.tianGan, p.diPan, p.renPan);
+                    if (!interpretation) return null;
+                    
+                    return (
+                      <div className="mt-6 pt-4 border-t border-border-v space-y-3">
+                        <div className="flex justify-between items-center">
+                          <h4 className="text-[10px] font-bold text-accent-s uppercase tracking-widest flex items-center gap-2">
+                            <FileText className="w-3 h-3" /> Luận Giải Chuyên Sâu
+                          </h4>
+                        </div>
+                        <div className="bg-accent-s/5 border border-accent-s/20 rounded-xl p-4">
+                           <div className="text-[9px] text-accent-s font-bold mb-2 uppercase tracking-tighter">Sự phối hợp: {p.tianGan} + {p.diPan} + {p.renPan} Môn</div>
+                           <p className="text-[11px] leading-relaxed text-foreground/90 font-medium">
+                             {interpretation.text}
+                           </p>
+                           <div className="mt-3 text-[8px] text-neutral-500 uppercase flex justify-between items-center">
+                              <span>Nguồn: Kinh điển Kỳ Môn</span>
+                              <span className="text-accent-s">Chiến lược thực thi</span>
+                           </div>
+                        </div>
+
+                        {/* Dấu hiệu ứng nghiệm (Evidential Occurrences) - NEW */}
+                        {EVIDENTIAL_MAP[p.renPan] && (
+                          <div className="bg-amber-500/5 border border-amber-500/10 rounded-xl p-4">
+                            <h5 className="text-[9px] font-bold text-amber-500 uppercase mb-3 flex items-center gap-2">
+                              <Stars className="w-3 h-3" /> Dấu hiệu kiểm chứng (Ứng nghiệm)
+                            </h5>
+                            <div className="space-y-3">
+                              {EVIDENTIAL_MAP[p.renPan].map((ev, i) => (
+                                <div key={i} className="flex gap-3 items-start">
+                                  <div className="shrink-0 w-1.5 h-1.5 rounded-full bg-amber-500 mt-1" />
+                                  <div>
+                                    <div className="text-[10px] text-amber-200/80 font-bold">{ev.type}: {ev.occurrence}</div>
+                                    <div className="text-[9px] text-neutral-500 leading-relaxed">{ev.meaning}</div>
+                                  </div>
+                                </div>
+                              ))}
+                              {/* Dấu hiệu đắc ứng kinh điển (Joey Yap Compendium) - NEW */}
+                         {(() => {
+                           const starId = STAR_ID_MAP[p.tianPan];
+                           const hourBranch = timeContext.bazi.hour.zhi;
+                           const hourKey = BRANCH_EN_MAP[hourBranch];
+                           const evidence = (starHourEvidence as any)[starId]?.[hourKey];
+                           
+                           if (!evidence) return null;
+                           
+                           return (
+                            <div className="bg-purple-500/5 border border-purple-500/10 rounded-xl p-4 mt-3">
+                              <h5 className="text-[9px] font-bold text-purple-400 uppercase mb-3 flex items-center gap-2">
+                                <Eye className="w-3 h-3" /> Dấu hiệu đắc ứng kinh điển (Pháp Kỳ Môn)
+                              </h5>
+                              <div className="text-[11px] leading-relaxed text-purple-100/90 italic">
+                                "{evidence}"
+                              </div>
+                              <div className="mt-3 text-[8px] text-neutral-600 uppercase flex justify-between items-center">
+                                <span>Nguồn: Joey Yap Compendium</span>
+                                <span className="text-purple-500/50 italic">* Nên hiểu theo nghĩa hiện đại</span>
+                              </div>
+                            </div>
+                           );
+                         })()}
+                       </div>
+                            <div className="mt-3 py-2 px-3 bg-amber-500/10 rounded-lg text-[8px] text-amber-500/70 italic">
+                              * Nếu thấy các dấu hiệu trên trong vòng 15-30 phút sau khi khởi sự, quẻ đang ứng nghiệm cực mạnh.
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })()}
+
                  {patterns[selectedPalace] && patterns[selectedPalace].filter(pt => pt.name !== 'Phản Ngâm' && pt.name !== 'Phục Ngâm').length > 0 && (
                    <div className="space-y-3 pt-4">
                       <h4 className="text-[10px] font-bold text-accent-t uppercase tracking-widest border-b border-border-v pb-2">Cách Cục</h4>

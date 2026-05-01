@@ -12,6 +12,11 @@ export enum QimenMethod {
   PHI_CUNG = 'PHI_CUNG', // Phi Cung
 }
 
+export enum QimenChartType {
+  HOUR = 'HOUR', // Thời Bàn
+  DAY = 'DAY',   // Nhật Bàn
+}
+
 export interface QimenJu {
   type: 'YANG' | 'YIN'; // Âm Cục hay Dương Cục
   number: number;       // Cục số (1-9)
@@ -41,11 +46,60 @@ import { Solar } from 'lunar-javascript';
 
 export class QimenEngine {
   
-  public static calculateJu(method: QimenMethod, timeContext: TimeContext): QimenJu | null {
+  public static calculateJu(method: QimenMethod, timeContext: TimeContext, type: QimenChartType = QimenChartType.HOUR): QimenJu | null {
+    if (type === QimenChartType.DAY) return this.calculateDayJu(timeContext);
+    
     if (method === QimenMethod.CHAI_BU) return this.calculateChaiBu(timeContext);
     if (method === QimenMethod.ZHI_RUN) return this.calculateZhiRun(timeContext);
     
-    return this.calculateChaiBu(timeContext); // Fallback cho Phi Cung nếu cần
+    return this.calculateChaiBu(timeContext);
+  }
+
+  /**
+   * Tính Cục cho Nhật Bàn theo phương pháp Tam Nguyên (San Yuan)
+   * Dương Độn: Thượng 1, Trung 7, Hạ 4
+   * Âm Độn: Thượng 9, Trung 3, Hạ 6
+   */
+  private static calculateDayJu(timeContext: TimeContext): QimenJu | null {
+    const dayGan = timeContext.bazi.day.gan;
+    const dayZhi = timeContext.bazi.day.zhi;
+    const isYang = timeContext.jieQi.isYang;
+    
+    const yuan = this.calculateYuan(dayGan, dayZhi);
+    
+    // Tính số thứ tự ngày trong vòng 60 hoa giáp (Jia Zi = 0)
+    const ganIdx = TIAN_GAN.indexOf(dayGan);
+    const zhiIdx = DI_ZHI.indexOf(dayZhi);
+    const day60Idx = ((ganIdx - zhiIdx + 12) % 12) / 2 * 10 + ganIdx;
+    
+    // Tìm ngày Phù Đầu của Nguyên hiện tại
+    const fuTouIdx = Math.floor(day60Idx / 15) * 15;
+    const daysSinceFuTou = day60Idx - fuTouIdx;
+
+    let startJu = 1;
+    if (isYang) {
+      if (yuan === 1) startJu = 1;
+      else if (yuan === 2) startJu = 7;
+      else startJu = 4;
+    } else {
+      if (yuan === 1) startJu = 9;
+      else if (yuan === 2) startJu = 3;
+      else startJu = 6;
+    }
+
+    // Cục số chạy tịnh tiến (Dương) hoặc lùi (Âm)
+    let juNumber = isYang 
+      ? ((startJu + daysSinceFuTou - 1) % 9) + 1
+      : ((startJu - daysSinceFuTou + 8) % 9) + 1;
+      
+    if (juNumber <= 0) juNumber += 9;
+
+    return {
+      type: isYang ? 'YANG' : 'YIN',
+      number: juNumber,
+      yuan: yuan,
+      method: QimenMethod.CHAI_BU // Nhật Bàn mặc định dùng San Yuan (tương đương Chai Bu logic)
+    };
   }
 
   private static calculateYuan(dayGan: string, dayZhi: string): number {
@@ -185,9 +239,14 @@ export class QimenEngine {
     };
   }
 
-  public static calculatePan(method: QimenMethod, timeContext: TimeContext): QimenPan | null {
-    const ju = this.calculateJu(method, timeContext);
+  public static calculatePan(method: QimenMethod, timeContext: TimeContext, type: QimenChartType = QimenChartType.HOUR): QimenPan | null {
+    const ju = this.calculateJu(method, timeContext, type);
     if (!ju) return null;
+
+    // Chọn Can/Chi/Tuần Thủ dựa trên loại Bàn
+    const mainGan = type === QimenChartType.HOUR ? timeContext.bazi.hour.gan : timeContext.bazi.day.gan;
+    const mainZhi = type === QimenChartType.HOUR ? timeContext.bazi.hour.zhi : timeContext.bazi.day.zhi;
+    const xunShou = type === QimenChartType.HOUR ? timeContext.xunShou : timeContext.dayXunShou;
 
     const palaces: Record<number, Palace> = {};
     for (let i = 1; i <= 9; i++) {
@@ -207,8 +266,7 @@ export class QimenEngine {
     }
 
     // 2. Tìm Trực Phù & Trực Sử
-    // Tuần Thủ của giờ: (Ví dụ Giáp Tý)
-    const xunShou = timeContext.xunShou;
+    // Sử dụng xunShou đã được định nghĩa ở đầu hàm dựa trên ChartType
     const liuYi = XUN_SHOU_MAP[xunShou]; // Hệ can tương ứng với tuần thủ
     
     // Tìm vị trí của Lục Nghi này trên Địa Bàn
@@ -303,15 +361,14 @@ export class QimenEngine {
       }
 
       const xunZhiSplit = xunShou.split(' ')[1] || xunShou.substring(1, 2); 
-      const hourZhi = timeContext.bazi.hour.zhi;
       const xunZhiIdx = BRANCH_ARRAY.indexOf(xunZhiSplit);
-      const hourZhiIdx = BRANCH_ARRAY.indexOf(hourZhi);
+      const mainZhiIdx = BRANCH_ARRAY.indexOf(mainZhi);
       
-      let hoursPassed = hourZhiIdx - xunZhiIdx;
-      if (hoursPassed < 0) hoursPassed += 12;
+      let stepsPassed = mainZhiIdx - xunZhiIdx;
+      if (stepsPassed < 0) stepsPassed += 12;
 
       let currentShiPalace = actualXunPalace;
-      for (let i = 0; i < hoursPassed; i++) {
+      for (let i = 0; i < stepsPassed; i++) {
           currentShiPalace += step; 
           if (currentShiPalace > 9) currentShiPalace = 1;
           if (currentShiPalace < 1) currentShiPalace = 9;
@@ -336,7 +393,7 @@ export class QimenEngine {
     const voidBranches = XUN_VOID_MAP[xunShou] || [];
     const voidPalaces = voidBranches.map(b => BRANCH_PALACE_MAP[b]);
     
-    const horseBranch = HORSE_MAP[timeContext.bazi.hour.zhi];
+    const horseBranch = HORSE_MAP[mainZhi];
     const horsePalace = BRANCH_PALACE_MAP[horseBranch];
 
     return { ju, palaces, zhiFu, zhiShi, voidPalaces, horsePalace };
