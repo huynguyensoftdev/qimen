@@ -39,14 +39,6 @@ export const TIAN_GAN = ['Giáp', 'Ất', 'Bính', 'Đinh', 'Mậu', 'Kỷ', 'Ca
 // 12 Địa Chi
 export const DI_ZHI = ['Tý', 'Sửu', 'Dần', 'Mão', 'Thìn', 'Tỵ', 'Ngọ', 'Mùi', 'Thân', 'Dậu', 'Tuất', 'Hợi'];
 
-// Nguyên (Yuan): 1 = Thượng, 2 = Trung, 3 = Hạ
-// Ngày Giáp, Kỷ: Tý, Ngọ, Mão, Dậu -> Thượng Nguyên; Dần, Thân, Tỵ, Hợi -> Trung Nguyên; Thìn, Tuất, Sửu, Mùi -> Hạ Nguyên
-export const DAY_ZHI_YUAN_MAP: Record<string, number> = {
-  'Tý': 1, 'Ngọ': 1, 'Mão': 1, 'Dậu': 1,
-  'Dần': 2, 'Thân': 2, 'Tỵ': 2, 'Hợi': 2,
-  'Thìn': 3, 'Tuất': 3, 'Sửu': 3, 'Mùi': 3,
-};
-
 // Vòng cơ sở của Tam Kỳ Lục Nghi
 export const SAN_QI_LIU_YI = ['Mậu', 'Kỷ', 'Canh', 'Tân', 'Nhâm', 'Quý', 'Đinh', 'Bính', 'Ất'];
 
@@ -91,16 +83,16 @@ export const PALACE_RING_CLOCKWISE = [1, 8, 3, 4, 9, 2, 7, 6];
 export const BRANCH_ARRAY = ['Tý', 'Sửu', 'Dần', 'Mão', 'Thìn', 'Tỵ', 'Ngọ', 'Mùi', 'Thân', 'Dậu', 'Tuất', 'Hợi'];
 
 // Thông số Cửu Cung Lạc Thư
-export const PALACE_INFO: Record<number, { bagua: string; element: string; direction: string }> = {
-  1: { bagua: 'Khảm', element: 'Thủy', direction: 'Chính Bắc' },
-  2: { bagua: 'Khôn', element: 'Thổ', direction: 'Tây Nam' },
-  3: { bagua: 'Chấn', element: 'Mộc', direction: 'Chính Đông' },
-  4: { bagua: 'Tốn', element: 'Mộc', direction: 'Đông Nam' },
-  5: { bagua: 'Trung Cung', element: 'Thổ', direction: 'Trung Tâm' },
-  6: { bagua: 'Càn', element: 'Kim', direction: 'Tây Bắc' },
-  7: { bagua: 'Đoài', element: 'Kim', direction: 'Chính Tây' },
-  8: { bagua: 'Cấn', element: 'Thổ', direction: 'Đông Bắc' },
-  9: { bagua: 'Ly', element: 'Hỏa', direction: 'Chính Nam' }
+export const PALACE_INFO: Record<number, { bagua: string; symbol: string; element: string; direction: string }> = {
+  1: { bagua: 'Khảm', symbol: '☵', element: 'Thủy', direction: 'Chính Bắc' },
+  2: { bagua: 'Khôn', symbol: '☷', element: 'Thổ', direction: 'Tây Nam' },
+  3: { bagua: 'Chấn', symbol: '☳', element: 'Mộc', direction: 'Chính Đông' },
+  4: { bagua: 'Tốn', symbol: '☴', element: 'Mộc', direction: 'Đông Nam' },
+  5: { bagua: 'Trung Cung', symbol: '☯', element: 'Thổ', direction: 'Trung Tâm' },
+  6: { bagua: 'Càn', symbol: '☰', element: 'Kim', direction: 'Tây Bắc' },
+  7: { bagua: 'Đoài', symbol: '☱', element: 'Kim', direction: 'Chính Tây' },
+  8: { bagua: 'Cấn', symbol: '☶', element: 'Thổ', direction: 'Đông Bắc' },
+  9: { bagua: 'Ly', symbol: '☲', element: 'Hỏa', direction: 'Chính Nam' }
 };
 
 // Tuần Không (Dựa vào Tuần Thủ)

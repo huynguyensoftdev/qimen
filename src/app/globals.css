@@ -7,6 +7,7 @@
   --accent-primary: #a855f7; /* Purple */
   --accent-secondary: #3b82f6; /* Blue */
   --accent-text: #a1a1aa;
+  --border: rgba(255, 255, 255, 0.1);
 }
 
 .theme-zen {
@@ -15,6 +16,16 @@
   --accent-primary: #d97706; /* Saffron */
   --accent-secondary: #fbbf24; /* Gold */
   --accent-text: #a98467;
+  --border: rgba(251, 191, 36, 0.1);
+}
+
+.theme-light {
+  --background: #fafafa;
+  --foreground: #0c0a09;
+  --accent-primary: #442c21; /* Dark Cocoa */
+  --accent-secondary: #9a3412; /* Deep Rust */
+  --accent-text: #44403c;    /* Darker Stone for contrast */
+  --border: rgba(0, 0, 0, 0.15);
 }
 
 @theme inline {
@@ -25,6 +36,7 @@
   --color-accent-p: var(--accent-primary);
   --color-accent-s: var(--accent-secondary);
   --color-accent-t: var(--accent-text);
+  --color-border-v: var(--border);
 }
 
 body {

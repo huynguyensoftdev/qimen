@@ -1,7 +1,7 @@
 import { TimeContext } from './TimeEngine';
 import { translateJieQi } from './I18nMapping';
 import { 
-  JIEQI_JU_MAP, DAY_ZHI_YUAN_MAP, SAN_QI_LIU_YI, 
+  JIEQI_JU_MAP, SAN_QI_LIU_YI, TIAN_GAN, DI_ZHI,
   XUN_SHOU_MAP, BASE_STARS, BASE_DOORS, PALACE_RING_CLOCKWISE, BRANCH_ARRAY, EIGHT_DEITIES,
   XUN_VOID_MAP, HORSE_MAP, BRANCH_PALACE_MAP
 } from './QimenConstants';
@@ -48,14 +48,33 @@ export class QimenEngine {
     return this.calculateChaiBu(timeContext); // Fallback cho Phi Cung nếu cần
   }
 
+  private static calculateYuan(dayGan: string, dayZhi: string): number {
+    const ganIdx = TIAN_GAN.indexOf(dayGan);
+    const zhiIdx = DI_ZHI.indexOf(dayZhi);
+    if (ganIdx === -1 || zhiIdx === -1) return 1;
+
+    // Tính chỉ số ngày trong vòng 60 hoa giáp (0-59)
+    // Công thức: index = (CanIndex - ChiIndex + 12) % 12 / 2 * 10 + CanIndex
+    const day60Idx = ((ganIdx - zhiIdx + 12) % 12) / 2 * 10 + ganIdx;
+    
+    // Mỗi chu kỳ 15 ngày chia làm 3 Nguyên (Thượng, Trung, Hạ), mỗi Nguyên 5 ngày.
+    // Phù đầu (Giáp Tý, Kỷ Mão, Giáp Ngọ, Kỷ Dậu) luôn chia hết cho 15 dư 0.
+    const yuanIdx = day60Idx % 15;
+
+    if (yuanIdx < 5) return 1;  // Thượng Nguyên (0-4)
+    if (yuanIdx < 10) return 2; // Trung Nguyên (5-9)
+    return 3;                   // Hạ Nguyên (10-14)
+  }
+
   private static calculateChaiBu(timeContext: TimeContext): QimenJu | null {
+    const dayGan = timeContext.bazi.day.gan;
     const dayZhi = timeContext.bazi.day.zhi;
     const jieQiName = timeContext.jieQi.current.name;
 
     const jqData = JIEQI_JU_MAP[jieQiName];
     if (!jqData) return null;
 
-    const yuan = DAY_ZHI_YUAN_MAP[dayZhi] || 1; 
+    const yuan = this.calculateYuan(dayGan, dayZhi); 
 
     let juNumber = 1;
     if (yuan === 1) juNumber = jqData.upper;
@@ -82,10 +101,6 @@ export class QimenEngine {
     let daysDiff = 0;
     let found = false;
 
-    // Giáp/Kỷ map
-    const ganTargets = ['Giáp', 'Kỷ'];
-    const zhiTargets = ['Tý', 'Ngọ', 'Mão', 'Dậu'];
-
     for (let i = 0; i < 15; i++) {
         const testDate = new Date(targetDate.getTime() - i * 24 * 60 * 60 * 1000);
         const testSolar = Solar.fromDate(testDate);
@@ -93,12 +108,8 @@ export class QimenEngine {
         const tGan = testBazi.getDayGan(); // Chinese
         const tZhi = testBazi.getDayZhi(); // Chinese
         
-        // Convert to VN or directly test Chinese defaults if Lunar-JS returns them directly
-        // Cần import TimeEngine (nếu đang ở ngoài) hoặc tự test. Nhưng LunarJS trả về chữ Hán.
-        const ganCh = tGan;
-        const zhiCh = tZhi;
-        const validGan = ganCh === '甲' || ganCh === '己';
-        const validZhi = zhiCh === '子' || zhiCh === '午' || zhiCh === '卯' || zhiCh === '酉';
+        const validGan = tGan === '甲' || tGan === '己';
+        const validZhi = tZhi === '子' || tZhi === '午' || tZhi === '卯' || tZhi === '酉';
 
         if (validGan && validZhi) {
             upperFuTouDate = testDate;
@@ -113,7 +124,7 @@ export class QimenEngine {
     // 2. Xác định Nguyên (Thượng, Trung, Hạ)
     const yuan = Math.floor(daysDiff / 5) + 1; // 0-4: Thượng, 5-9: Trung, 10-14: Hạ
 
-    // 3. Tìm Tiết Khí gần nhất với Thượng Nguyên Phù Đầu
+    // 3. Tìm Tiết Khí gần nhất với Thượng Nguyên Phù Đầu để xác định Tiết Khí chủ quản
     const fuTouSolar = Solar.fromDate(upperFuTouDate);
     const fuTouLunar = fuTouSolar.getLunar();
     
@@ -304,5 +315,16 @@ export class QimenEngine {
     const horsePalace = BRANCH_PALACE_MAP[horseBranch];
 
     return { ju, palaces, zhiFu, zhiShi, voidPalaces, horsePalace };
+  }
+
+  /**
+   * Tìm cung chứa một Thiên Can cụ thể (Dùng cho xem Mệnh chủ hoặc tìm vị trí Can)
+   */
+  public static findStemPalace(pan: QimenPan, stem: string, plate: 'TIAN' | 'DI' = 'TIAN'): number {
+    for (let i = 1; i <= 9; i++) {
+      if (plate === 'TIAN' && pan.palaces[i].tianGan === stem) return i;
+      if (plate === 'DI' && pan.palaces[i].diPan === stem) return i;
+    }
+    return 0;
   }
 }
